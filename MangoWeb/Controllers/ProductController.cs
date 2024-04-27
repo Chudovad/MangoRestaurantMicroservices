@@ -2,8 +2,6 @@
 using Mango.Web.Services.IServices;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Reflection;
 
 namespace Mango.Web.Controllers
 {
@@ -46,7 +44,7 @@ namespace Mango.Web.Controllers
                 if (response != null && response.IsSuccess)
                 {
                     return RedirectToAction(nameof(Index));
-                } 
+                }
             }
 
             return View(model);
