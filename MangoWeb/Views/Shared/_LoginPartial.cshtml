@@ -1,0 +1,17 @@
+﻿<ul class="navbar-nav">
+    @if (User.Identity.IsAuthenticated)
+    {
+        <li class="nav-item">
+            <a class="nav-link" href="#">@User.Identity.Name</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-action="Logout" asp-controller="Auth">Logout</a>
+        </li>
+    }
+    else
+    {
+        <a class="btn btn-outline-light me-2" asp-action="Login" asp-controller="Home">Login</a>
+        @*         <button type="button" class="btn btn-outline-light me-2">Login</button>
+    <button type="button" class="btn btn-warning">Sign-up</button> *@
+    }
+</ul>

@@ -3,64 +3,60 @@ using Mango.Web.Services.IServices;
 
 namespace Mango.Web.Services
 {
-    public class ProductService : BaseService, IProductService
+    public class ProductService : IProductService
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-
-        public ProductService(IHttpClientFactory httpClientFactory) : base(httpClientFactory)
+        private readonly IBaseService _baseService;
+        public ProductService(IBaseService baseService)
         {
-            _httpClientFactory = httpClientFactory;
+            _baseService = baseService;
         }
 
-        public async Task<T> CreateProductAsync<T>(ProductDto productDto)
+        public async Task<ResponseDto> CreateProductAsync(ProductDto productDto)
         {
-            return await SendAsync<T>(new ApiRequest
+            return await _baseService.SendAsync(new ApiRequest()
             {
                 ApiType = SD.ApiType.POST,
                 Data = productDto,
                 Url = SD.ProductAPIBase + "/api/products",
-                AccessToken = ""
             });
         }
 
-        public async Task<T> DeleteProductAsync<T>(int productId)
+        public async Task<ResponseDto> DeleteProductAsync(int id)
         {
-            return await SendAsync<T>(new ApiRequest
+            return await _baseService.SendAsync(new ApiRequest()
             {
                 ApiType = SD.ApiType.DELETE,
-                Url = SD.ProductAPIBase + "/api/products/" + productId,
-                AccessToken = ""
+                Url = SD.ProductAPIBase + "/api/products/" + id
             });
         }
 
-        public async Task<T> GetAllProductsAsync<T>()
+        public async Task<ResponseDto> GetAllProductAsync()
         {
-            return await SendAsync<T>(new ApiRequest
+            return await _baseService.SendAsync(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
-                Url = SD.ProductAPIBase + "/api/products",
-                AccessToken = ""
+                Url = SD.ProductAPIBase + "/api/products"
             });
         }
 
-        public async Task<T> GetProductByIdAsync<T>(int productId)
+
+
+        public async Task<ResponseDto> GetProductByIdAsync(int id)
         {
-            return await SendAsync<T>(new ApiRequest
+            return await _baseService.SendAsync(new ApiRequest()
             {
                 ApiType = SD.ApiType.GET,
-                Url = SD.ProductAPIBase + "/api/products/" + productId,
-                AccessToken = ""
+                Url = SD.ProductAPIBase + "/api/products/" + id
             });
         }
 
-        public async Task<T> UpdateProductAsync<T>(ProductDto productDto)
+        public async Task<ResponseDto> UpdateProductAsync(ProductDto productDto)
         {
-            return await SendAsync<T>(new ApiRequest
+            return await _baseService.SendAsync(new ApiRequest()
             {
                 ApiType = SD.ApiType.PUT,
                 Data = productDto,
                 Url = SD.ProductAPIBase + "/api/products",
-                AccessToken = ""
             });
         }
     }

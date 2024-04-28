@@ -18,7 +18,7 @@ namespace Mango.Web.Controllers
         {
             List<ProductDto> list = new();
 
-            var response = await _productService.GetAllProductsAsync<ResponseDto>();
+            var response = await _productService.GetAllProductAsync();
 
             if (response != null && response.IsSuccess)
             {
@@ -39,7 +39,7 @@ namespace Mango.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                var response = await _productService.CreateProductAsync<ResponseDto>(model);
+                var response = await _productService.CreateProductAsync(model);
 
                 if (response != null && response.IsSuccess)
                 {
@@ -52,7 +52,7 @@ namespace Mango.Web.Controllers
 
         public async Task<IActionResult> Edit(int productId)
         {
-            var response = await _productService.GetProductByIdAsync<ResponseDto>(productId);
+            var response = await _productService.GetProductByIdAsync(productId);
 
             if (response != null && response.IsSuccess)
             {
@@ -69,7 +69,7 @@ namespace Mango.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                var response = await _productService.UpdateProductAsync<ResponseDto>(model);
+                var response = await _productService.UpdateProductAsync(model);
 
                 if (response != null && response.IsSuccess)
                 {
@@ -82,7 +82,7 @@ namespace Mango.Web.Controllers
 
         public async Task<IActionResult> Delete(int productId)
         {
-            var response = await _productService.GetProductByIdAsync<ResponseDto>(productId);
+            var response = await _productService.GetProductByIdAsync(productId);
 
             if (response != null && response.IsSuccess)
             {
@@ -99,7 +99,7 @@ namespace Mango.Web.Controllers
         {
             if (ModelState.IsValid)
             {
-                var response = await _productService.DeleteProductAsync<ResponseDto>(model.ProductId);
+                var response = await _productService.DeleteProductAsync(model.ProductId);
 
                 if (response.IsSuccess)
                 {
