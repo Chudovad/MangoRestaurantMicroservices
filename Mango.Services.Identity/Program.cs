@@ -1,4 +1,5 @@
 using Mango.Services.Identity.Data;
+using Mango.Services.Identity.Initialize;
 using Mango.Services.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -31,13 +32,29 @@ namespace Mango.Services.Identity
                 .AddAspNetIdentity<ApplicationUser>();
 
             identity.AddDeveloperSigningCredential();
+            builder.Services.AddScoped<IDbInitialize, DbInitializer>();
 
             var app = builder.Build();
-            
+
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 dbContext.Database.Migrate();
+
+                try
+                {
+                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+                    var dbInitializer = new DbInitializer(context, userManager, roleManager);
+                    dbInitializer.Initialize();
+                }
+                catch (Exception ex)
+                {
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "An error occurred while initializing the database.");
+                }
             }
 
             // Configure the HTTP request pipeline.
@@ -54,6 +71,7 @@ namespace Mango.Services.Identity
             app.UseRouting();
             app.UseIdentityServer();
             app.UseAuthorization();
+            
 
             app.MapControllerRoute(
                 name: "default",
