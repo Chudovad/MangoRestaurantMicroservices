@@ -41,7 +41,12 @@ namespace Mango.Web.Controllers
 
                 await SignInUser(loginResponseDto);
                 _tokenProvider.SetToken(loginResponseDto.Token);
-                return RedirectToAction("Index", "Home");
+
+                string returnUrl = HttpContext.Request.Query["returnUrl"];
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    return Redirect(returnUrl);
+                else
+                    return RedirectToAction("Index", "Home");
             }
             else
             {
@@ -58,7 +63,7 @@ namespace Mango.Web.Controllers
                 new SelectListItem{Text = SD.RoleAdmin, Value = SD.RoleAdmin},
                 new SelectListItem{Text = SD.RoleCustomer, Value = SD.RoleCustomer},
             };
-
+            TempData["error"] = "";
             ViewBag.RoleList = roleList;
             return View();
         }
