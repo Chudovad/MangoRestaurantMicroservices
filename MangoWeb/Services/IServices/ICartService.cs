@@ -1,0 +1,12 @@
+﻿using Mango.Web.Models;
+
+namespace Mango.Web.Services.IServices
+{
+    public interface ICartService
+    {
+        Task<ResponseDto> GetCartByUserIdAsync(string userId);
+        Task<ResponseDto> AddToCartAsync(CartDto cartDto);
+        Task<ResponseDto> UpdateCartAsync(CartDto cartDto);
+        Task<ResponseDto> RemoveCartAsync(int cartId);
+    }
+}

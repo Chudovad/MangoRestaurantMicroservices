@@ -37,9 +37,9 @@ namespace Mango.Services.ShoppingCartAPI.Repository
 
             var prodInDb = await _context.Products.FirstOrDefaultAsync(u => u.ProductId == cartDto.CartDetails.FirstOrDefault().ProductId);
 
-            if (prodInDb != null)
+            if (prodInDb == null)
             {
-                await _context.AddAsync(cart.CartDetails.FirstOrDefault().Product);
+                await _context.Products.AddAsync(cart.CartDetails.FirstOrDefault().Product);
                 await _context.SaveChangesAsync();
             }
 
@@ -51,7 +51,7 @@ namespace Mango.Services.ShoppingCartAPI.Repository
                 await _context.SaveChangesAsync();
                 cart.CartDetails.FirstOrDefault().CartHeaderId = cart.CartHeader.CartHeaderId;
                 cart.CartDetails.FirstOrDefault().Product = null;
-                await _context.AddAsync(cart.CartDetails.FirstOrDefault());
+                await _context.CartDetails.AddAsync(cart.CartDetails.FirstOrDefault());
                 await _context.SaveChangesAsync();
             }
             else
@@ -64,13 +64,15 @@ namespace Mango.Services.ShoppingCartAPI.Repository
                 {
                     cart.CartDetails.FirstOrDefault().CartHeaderId = cartHeaderFromDb.CartHeaderId;
                     cart.CartDetails.FirstOrDefault().Product = null;
-                    await _context.AddAsync(cart.CartDetails.FirstOrDefault());
+                    await _context.CartDetails.AddAsync(cart.CartDetails.FirstOrDefault());
                     await _context.SaveChangesAsync();
                 }
                 else
                 {
                     cart.CartDetails.FirstOrDefault().Product = null;
                     cart.CartDetails.FirstOrDefault().Count += cartDetailsFromDb.Count;
+                    cart.CartDetails.FirstOrDefault().CartDetailsId = cartDetailsFromDb.CartDetailsId;
+                    cart.CartDetails.FirstOrDefault().CartHeaderId = cartDetailsFromDb.CartHeaderId;
                     _context.CartDetails.Update(cart.CartDetails.FirstOrDefault());
                     await _context.SaveChangesAsync();
                 }
@@ -80,10 +82,17 @@ namespace Mango.Services.ShoppingCartAPI.Repository
 
         public async Task<CartDto> GetCartByUserIdAsync(string userId)
         {
-            Cart cart = new Cart
+            Cart cart = new();
+            var cartHeader = await _context.CartHeaders.FirstOrDefaultAsync(x => x.UserId == userId);
+            if (cartHeader == null)
             {
-                CartHeader = await _context.CartHeaders.FirstOrDefaultAsync(x => x.UserId == userId)
-            };
+                cart.CartHeader = new();
+                cart.CartHeader.UserId = userId;
+            }
+            else
+            {
+                cart.CartHeader = cartHeader;
+            }
 
             cart.CartDetails = _context.CartDetails.Where(u => u.CartHeaderId == cart.CartHeader.CartHeaderId).Include(u => u.Product);
             return _mapper.Map<CartDto>(cart);
