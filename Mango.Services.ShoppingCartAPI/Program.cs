@@ -1,5 +1,6 @@
 using AutoMapper;
 using Mango.Services.ShoppingCartAPI.Data;
+using Mango.Services.ShoppingCartAPI.RabbitMQSender;
 using Mango.Services.ShoppingCartAPI.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -20,6 +21,7 @@ namespace Mango.Services.ShoppingCartAPI
             builder.Services.AddSingleton(mapper);
             builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             builder.Services.AddScoped<ICartRepository, CartRepository>();
+            builder.Services.AddScoped<IRabbitMQCartMessageSender, RabbitMQCartMessageSender>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();

@@ -1,4 +1,6 @@
-﻿using Mango.Services.ShoppingCartAPI.Models.Dto;
+﻿using Mango.Services.ShoppingCartAPI.Messages;
+using Mango.Services.ShoppingCartAPI.Models.Dto;
+using Mango.Services.ShoppingCartAPI.RabbitMQSender;
 using Mango.Services.ShoppingCartAPI.Repository;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,11 +11,14 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
     public class CartAPIController : Controller
     {
         private readonly ICartRepository _cartRepository;
+        private readonly IRabbitMQCartMessageSender _rabbitMQSender;
         protected ResponseDto _responseDto;
-        public CartAPIController(ICartRepository cartRepository)
+
+        public CartAPIController(ICartRepository cartRepository, IRabbitMQCartMessageSender rabbitMQCartMessageSender)
         {
             _cartRepository = cartRepository;
             _responseDto = new ResponseDto();
+            _rabbitMQSender = rabbitMQCartMessageSender;
         }
 
         [HttpGet("GetCart/{userId}")]
@@ -80,6 +85,21 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             return _responseDto;
         }
 
+        [HttpGet("ClearCart/{userId}")]
+        public async Task<object> ClearCart(string userId)
+        {
+            try
+            {
+                _responseDto.IsSuccess = await _cartRepository.ClearCart(userId);
+            }
+            catch (Exception ex)
+            {
+                _responseDto.IsSuccess = false;
+                _responseDto.ErrorMessages = new List<string>() { ex.ToString() };
+            }
+            return _responseDto;
+        }
+
         [HttpPost("ApplyCoupon")]
         public async Task<object> ApplyCoupon([FromBody] CartDto cartDto)
         {
@@ -103,6 +123,29 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
             {
                 bool isSuccess = await _cartRepository.RemoveCoupon(userId);
                 _responseDto.Result = isSuccess;
+            }
+            catch (Exception ex)
+            {
+                _responseDto.IsSuccess = false;
+                _responseDto.ErrorMessages = new List<string>() { ex.ToString() };
+            }
+            return _responseDto;
+        }
+
+        [HttpPost("Checkout")]
+        public async Task<object> Checkout(CheckoutHeaderDto checkOutHeaderDto)
+        {
+            try
+            {
+                CartDto cartDto = await _cartRepository.GetCartByUserIdAsync(checkOutHeaderDto.UserId);
+
+                if (cartDto == null)
+                {
+                    return BadRequest();
+                }
+                checkOutHeaderDto.CartDetails = cartDto.CartDetails;
+                _rabbitMQSender.SendMessage(checkOutHeaderDto, "dev-queue");
+                await _cartRepository.ClearCart(cartDto.CartHeader.UserId);
             }
             catch (Exception ex)
             {

@@ -32,6 +32,33 @@ namespace Mango.Web.Controllers
         }
 
         [Authorize]
+        [HttpPost]
+        public async Task<object> Checkout(CartDto cartDto)
+        {
+            try
+            {
+                var response = await _cartService.CheckoutAsync(cartDto.CartHeader);
+                if (!response.IsSuccess)
+                {
+                    TempData["Error"] = response.DisplayMessage;
+                    return RedirectToAction(nameof(Checkout));
+                }
+
+                return RedirectToAction(nameof(Confirmation)); 
+            }
+            catch (Exception ex)
+            {
+                return View(cartDto);
+            }
+        }
+
+        [Authorize]
+        public IActionResult Confirmation()
+        {
+            return View();
+        }
+
+        [Authorize]
         public async Task<IActionResult> Remove(int cartDetailsId)
         {
             var response = await _cartService.RemoveCartAsync(cartDetailsId);
