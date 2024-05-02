@@ -1,10 +1,13 @@
 using AutoMapper;
-using Mango.Services.CouponAPI.Data;
-using Mango.Services.CouponAPI.Repository;
+using Mango.Services.OrderAPI.Data;
+using Mango.Services.OrderAPI.Messaging;
+using Mango.Services.OrderAPI.RabbitMQSender;
+using Mango.Services.OrderAPI.Repository;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
-namespace Mango.Services.CouponAPI
+namespace Mango.Services.OrderAPI
 {
     public class Program
     {
@@ -16,10 +19,14 @@ namespace Mango.Services.CouponAPI
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            IMapper mapper = MappingConfig.RegisterMaps().CreateMapper();
-            builder.Services.AddSingleton(mapper);
-            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-            builder.Services.AddScoped<ICouponRepository, CouponRepository>();
+            //builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+            var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+            optionsBuilder.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+            
+            builder.Services.AddHostedService<RabbitMQCheckoutConsumer>();
+            builder.Services.AddSingleton(new OrderRepository(optionsBuilder.Options));
+            builder.Services.AddSingleton<IRabbitMQOrderMessageSender, RabbitMQOrderMessageSender>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
@@ -29,7 +36,7 @@ namespace Mango.Services.CouponAPI
 
             builder.Services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Mango.Services.CouponAPI", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Mango.Services.OrderAPI", Version = "v1" });
                 c.EnableAnnotations();
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
