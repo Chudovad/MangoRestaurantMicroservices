@@ -1,4 +1,5 @@
-﻿using Mango.Services.ShoppingCartAPI.Messages;
+﻿using Azure;
+using Mango.Services.ShoppingCartAPI.Messages;
 using Mango.Services.ShoppingCartAPI.Models.Dto;
 using Mango.Services.ShoppingCartAPI.RabbitMQSender;
 using Mango.Services.ShoppingCartAPI.Repository;
@@ -11,14 +12,16 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
     public class CartAPIController : Controller
     {
         private readonly ICartRepository _cartRepository;
+        private readonly ICouponRepository _couponRepository;
         private readonly IRabbitMQCartMessageSender _rabbitMQSender;
         protected ResponseDto _responseDto;
 
-        public CartAPIController(ICartRepository cartRepository, IRabbitMQCartMessageSender rabbitMQCartMessageSender)
+        public CartAPIController(ICartRepository cartRepository, IRabbitMQCartMessageSender rabbitMQCartMessageSender, ICouponRepository couponRepository)
         {
             _cartRepository = cartRepository;
             _responseDto = new ResponseDto();
             _rabbitMQSender = rabbitMQCartMessageSender;
+            _couponRepository = couponRepository;
         }
 
         [HttpGet("GetCart/{userId}")]
@@ -143,8 +146,21 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
                 {
                     return BadRequest();
                 }
+
+                if (!string.IsNullOrEmpty(checkOutHeaderDto.CouponCode))
+                {
+                    CouponDto couponDto = await _couponRepository.GetCouponAsync(checkOutHeaderDto.CouponCode);
+                    if (checkOutHeaderDto.DiscountTotal != couponDto.DiscountAmount)
+                    {
+                        _responseDto.IsSuccess = false;
+                        _responseDto.ErrorMessages = new List<string>() { "Coupon Price has changed, please confirm" };
+                        _responseDto.DisplayMessage = "Coupon Price has changed, please confirm";
+                        return _responseDto;
+                    }
+                }
+
                 checkOutHeaderDto.CartDetails = cartDto.CartDetails;
-                _rabbitMQSender.SendMessage(checkOutHeaderDto, "dev-queue");
+                _rabbitMQSender.SendMessage(checkOutHeaderDto, "CheckoutQueue");
                 await _cartRepository.ClearCart(cartDto.CartHeader.UserId);
             }
             catch (Exception ex)

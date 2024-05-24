@@ -29,7 +29,7 @@ namespace Mango.Services.OrderAPI.Messaging
 
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            _channel.QueueDeclare(queue: "dev-queue", false, false, false, arguments: null);
+            _channel.QueueDeclare(queue: "CheckoutQueue", false, false, false, arguments: null);
         }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -44,7 +44,7 @@ namespace Mango.Services.OrderAPI.Messaging
 
                 _channel.BasicAck(ea.DeliveryTag, false);
             };
-            _channel.BasicConsume("dev-queue", false, consumer);
+            _channel.BasicConsume("CheckoutQueue", false, consumer);
 
             return Task.CompletedTask;
         }
