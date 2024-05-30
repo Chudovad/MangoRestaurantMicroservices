@@ -15,11 +15,19 @@ namespace Mango.Services.OrderAPI.Messaging
         private IConnection _connection;
         private IModel _channel;
         private readonly IRabbitMQOrderMessageSender _rabbitMQOrderMessageSender;
+        private readonly IConfiguration _configuration;
+        private readonly string checkoutQueueName;
+        private readonly string orderPaymentQueueName;
 
-        public RabbitMQCheckoutConsumer(OrderRepository orderRepository, IRabbitMQOrderMessageSender rabbitMQOrderMessageSender)
+        public RabbitMQCheckoutConsumer(OrderRepository orderRepository, IRabbitMQOrderMessageSender rabbitMQOrderMessageSender, IConfiguration configuration)
         {
             _orderRepository = orderRepository;
             _rabbitMQOrderMessageSender = rabbitMQOrderMessageSender;
+            _configuration = configuration;
+
+            checkoutQueueName = _configuration.GetValue<string>("CheckoutQueueName");
+            orderPaymentQueueName = _configuration.GetValue<string>("OrderPaymentQueueName");
+
             var factory = new ConnectionFactory
             {
                 HostName = "localhost",
@@ -29,8 +37,9 @@ namespace Mango.Services.OrderAPI.Messaging
 
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            _channel.QueueDeclare(queue: "CheckoutQueue", false, false, false, arguments: null);
+            _channel.QueueDeclare(queue: checkoutQueueName, false, false, false, arguments: null);
         }
+
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             stoppingToken.ThrowIfCancellationRequested();
@@ -44,7 +53,7 @@ namespace Mango.Services.OrderAPI.Messaging
 
                 _channel.BasicAck(ea.DeliveryTag, false);
             };
-            _channel.BasicConsume("CheckoutQueue", false, consumer);
+            _channel.BasicConsume(checkoutQueueName, false, consumer);
 
             return Task.CompletedTask;
         }
@@ -98,7 +107,7 @@ namespace Mango.Services.OrderAPI.Messaging
 
             try
             {
-                _rabbitMQOrderMessageSender.SendMessage(paymentRequestMessage, "order-payment");
+                _rabbitMQOrderMessageSender.SendMessage(paymentRequestMessage, orderPaymentQueueName);
             }
             catch (Exception e)
             {

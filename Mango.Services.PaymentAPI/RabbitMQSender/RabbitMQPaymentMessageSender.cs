@@ -11,12 +11,21 @@ namespace Mango.Services.PaymentAPI.RabbitMQSender
         private readonly string _password;
         private readonly string _username;
         private IConnection _connection;
-        private const string ExchangeName = "DirectPaymentUpdate_Exchange";
-        private const string PaymentEmailUpdateQueueName = "PaymentEmailUpdateQueueName";
-        private const string PaymentOrderUpdateQueueName = "PaymentOrderUpdateQueueName";
+        private readonly IConfiguration _configuration;
+        private readonly string exchangeName;
+        private readonly string paymentEmailUpdateQueueName;
+        private readonly string paymentOrderUpdateQueueName;
+        private readonly string paymentOrderRoutingKey;
+        private readonly string paymentEmailRoutingKey;
 
-        public RabbitMQPaymentMessageSender()
+        public RabbitMQPaymentMessageSender(IConfiguration configuration)
         {
+            _configuration = configuration;
+            exchangeName = _configuration.GetValue<string>("ExchangeName");
+            paymentEmailUpdateQueueName = _configuration.GetValue<string>("PaymentEmailUpdateQueueName");
+            paymentOrderUpdateQueueName = _configuration.GetValue<string>("PaymentOrderUpdateQueueName");
+            paymentOrderRoutingKey = _configuration.GetValue<string>("PaymentEmailRoutingKey");
+            paymentEmailRoutingKey = _configuration.GetValue<string>("PaymentOrderRoutingKey");
             _hostname = "localhost";
             _password = "guest";
             _username = "guest";
@@ -27,17 +36,17 @@ namespace Mango.Services.PaymentAPI.RabbitMQSender
             if (ConnectionExists())
             {
                 using var channel = _connection.CreateModel();
-                channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, durable: false);
-                channel.QueueDeclare(PaymentOrderUpdateQueueName, false, false, false, null);
-                channel.QueueDeclare(PaymentEmailUpdateQueueName, false, false, false, null);
+                channel.ExchangeDeclare(exchangeName, ExchangeType.Direct, durable: false);
+                channel.QueueDeclare(paymentOrderUpdateQueueName, false, false, false, null);
+                channel.QueueDeclare(paymentEmailUpdateQueueName, false, false, false, null);
 
-                channel.QueueBind(PaymentEmailUpdateQueueName, ExchangeName, "PaymentEmail");
-                channel.QueueBind(PaymentOrderUpdateQueueName, ExchangeName, "PaymentOrder");
+                channel.QueueBind(paymentEmailUpdateQueueName, exchangeName, paymentEmailRoutingKey);
+                channel.QueueBind(paymentOrderUpdateQueueName, exchangeName, paymentOrderRoutingKey);
 
                 var json = JsonConvert.SerializeObject(message);
                 var body = Encoding.UTF8.GetBytes(json);
-                channel.BasicPublish(exchange: ExchangeName, "PaymentEmail", basicProperties: null, body: body);
-                channel.BasicPublish(exchange: ExchangeName, "PaymentOrder", basicProperties: null, body: body);
+                channel.BasicPublish(exchange: exchangeName, paymentEmailRoutingKey, basicProperties: null, body: body);
+                channel.BasicPublish(exchange: exchangeName, paymentOrderRoutingKey, basicProperties: null, body: body);
             }
         }
 

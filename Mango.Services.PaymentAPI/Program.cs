@@ -1,3 +1,4 @@
+using Mango.Services.PaymentAPI.Messaging;
 using Mango.Services.PaymentAPI.RabbitMQSender;
 using PaymentProcessor;
 
@@ -12,7 +13,7 @@ namespace Mango.Services.PaymentAPI
             // Add services to the container.
             builder.Services.AddSingleton<IProcessPayment, ProcessPayment>();
             builder.Services.AddSingleton<IRabbitMQPaymentMessageSender, RabbitMQPaymentMessageSender>();
-
+            builder.Services.AddHostedService<RabbitMQPaymentConsumer>();
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();

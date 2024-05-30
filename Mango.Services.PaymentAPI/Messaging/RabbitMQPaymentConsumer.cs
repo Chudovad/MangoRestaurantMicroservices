@@ -14,12 +14,18 @@ namespace Mango.Services.PaymentAPI.Messaging
         private IModel _channel;
         private readonly IRabbitMQPaymentMessageSender _rabbitMQPaymentMessageSender;
         private readonly IProcessPayment _processPayment;
+        private readonly IConfiguration _configuration;
+        public readonly string orderPaymentQueueName;
 
         public RabbitMQPaymentConsumer(IRabbitMQPaymentMessageSender rabbitMQPaymentMessageSender,
-            IProcessPayment processPayment)
+            IProcessPayment processPayment, IConfiguration configuration)
         {
             _processPayment = processPayment;
             _rabbitMQPaymentMessageSender = rabbitMQPaymentMessageSender;
+            _configuration = configuration;
+
+            orderPaymentQueueName = _configuration.GetValue<string>("OrderPaymentQueueName");
+
             var factory = new ConnectionFactory
             {
                 HostName = "localhost",
@@ -29,8 +35,9 @@ namespace Mango.Services.PaymentAPI.Messaging
 
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            _channel.QueueDeclare(queue: "order-payment", false, false, false, arguments: null);
+            _channel.QueueDeclare(queue: orderPaymentQueueName, false, false, false, arguments: null);
         }
+
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             stoppingToken.ThrowIfCancellationRequested();
@@ -44,7 +51,7 @@ namespace Mango.Services.PaymentAPI.Messaging
 
                 _channel.BasicAck(ea.DeliveryTag, false);
             };
-            _channel.BasicConsume("order-payment", false, consumer);
+            _channel.BasicConsume(orderPaymentQueueName, false, consumer);
 
             return Task.CompletedTask;
         }
@@ -64,8 +71,6 @@ namespace Mango.Services.PaymentAPI.Messaging
             try
             {
                 _rabbitMQPaymentMessageSender.SendMessage(updatePaymentResultMessage);
-                // await _messageBus.PublishMessage(updatePaymentResultMessage, orderupdatepaymentresulttopic);
-                // await args.CompleteMessageAsync(args.Message);
             }
             catch (Exception e)
             {
